@@ -4,3 +4,80 @@ cvcc
 test
 
 s
+
+
+---
+- name: Install Terraform, Helm, kubectl, and DigitalOcean CLI on Ubuntu
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Update the package list and install prerequisites
+      apt:
+        update_cache: yes
+        name:
+          - gnupg
+          - software-properties-common
+        state: present
+
+    - name: Download and add the HashiCorp GPG key
+      command: >
+        wget -O- https://apt.releases.hashicorp.com/gpg |
+        gpg --dearmor |
+        tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+
+    - name: Verify the HashiCorp GPG key fingerprint
+      command: >
+        gpg --no-default-keyring
+        --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg
+        --fingerprint
+
+    - name: Add HashiCorp repository to sources list
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ distro_codename.stdout }} main"
+        state: present
+
+    - name: Update the package list
+      apt:
+        update_cache: yes
+
+    - name: Install Terraform
+      apt:
+        name: terraform
+        state: present
+
+    - name: Install Helm
+      command: curl https://baltocdn.com/helm/signing.asc | apt-key add -
+      command: apt-get install apt-transport-https --yes
+      command: echo "deb https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
+      command: apt-get update
+      command: apt-get install helm
+
+    - name: Install kubectl
+      command: curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+      command: chmod +x ./kubectl
+      command: mv ./kubectl /usr/local/bin/kubectl
+
+    - name: Install doctl
+      command: curl -sL https://github.com/digitalocean/doctl/releases/download/v1.64.0/doctl-1.64.0-linux-amd64.tar.gz | tar -xzv
+      command: mv ./doctl /usr/local/bin
+
+    - name: Verify Helm installation
+      command: helm version
+      register: helm_version
+
+    - name: Verify kubectl installation
+      command: kubectl version --client
+      register: kubectl_version
+
+    - name: Verify doctl installation
+      command: doctl version
+      register: doctl_version
+
+    - name: Display versions
+      debug:
+        msg: 
+          - "Terraform version installed: {{ terraform_version.stdout }}"
+          - "Helm version installed: {{ helm_version.stdout }}"
+          - "kubectl version installed: {{ kubectl_version.stdout }}"
+          - "DigitalOcean CLI version installed: {{ doctl_version.stdout }}"

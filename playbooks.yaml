@@ -1,0 +1,125 @@
+- name: My first play
+  hosts: localhost
+
+
+  roles:
+    - geerlingguy.docker
+    
+  tasks:
+    - name: Basic App requirement 
+      ansible.builtin.apt:
+        name: "{{item}}"
+        state: present
+      loop:
+        - python3
+        - bash-completion
+        - net-tools
+        - xrdp
+        - npm
+        - git
+
+    - name: Update the package list and install prerequisites 
+      apt:
+       update_cache: yes 
+       name: 
+        - gnupg 
+        - software-properties-common 
+       state: present
+
+    - name: Add the HashiCorp GPG key
+      apt_key:
+        url: https://apt.releases.hashicorp.com/gpg
+        state: present
+
+    - name: Get the distribution codename
+      command: lsb_release -cs
+      register: distro_codename
+
+
+    - name: Add HashiCorp repository
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ distro_codename.stdout }} main"
+        state: present
+
+    - name: Update the package list
+      apt:
+        update_cache: yes
+
+    - name: Install Terraform
+      apt:
+        name: terraform
+        state: latest
+
+    - name: Verify Terraform installation
+      command: terraform -version
+      register: terraform_version
+
+    - name: Display Terraform version
+      debug:
+        msg: "Terraform version installed: {{ terraform_version.stdout }}"
+
+
+# Install Helm
+
+    - name: Add the Helm GPG key
+      apt_key:
+        url: https://baltocdn.com/helm/signing.asc
+        state: present
+
+    - name: Update the package list and install prerequisites 
+      apt:
+       update_cache: yes 
+       name: apt-transport-https
+       state: latest
+
+    - name: Add Helm repository
+      apt_repository:
+        repo: "deb https://baltocdn.com/helm/stable/debian/ all main"
+        state: present
+
+    - name: Update the package list
+      apt:
+        update_cache: yes
+
+    - name: Install Terraform
+      apt:
+        name: helm
+        state: latest
+
+    # - name: Install Helm
+    #   command: curl https://baltocdn.com/helm/signing.asc | apt-key add -
+    #   command: apt-get install apt-transport-https --yes
+    #   command: echo "deb https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
+    #   command: apt-get update
+    #   command: apt-get install helm
+
+
+
+
+
+
+# ---
+# - name: Add HashiCorp repository to sources list
+#   hosts: all
+#   become: yes
+
+#   tasks:
+#     - name: Add HashiCorp repository
+#       apt_repository:
+#         repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+#         state: present
+
+# ---
+# - name: Get the distribution codename in Ansible
+#   hosts: all
+#   become: yes
+
+#   tasks:
+#     - name: Get the distribution codename
+#       command: lsb_release -cs
+#       register: distro_codename
+
+#     - name: Add HashiCorp repository to sources list
+#       apt_repository:
+#         repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ distro_codename.stdout }} main"
+#         state: present
