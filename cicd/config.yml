@@ -1,0 +1,9 @@
+version: 2
+jobs:
+  plan:
+    docker:
+      - image: hashicorp/terraform:latest
+    steps:
+      - checkout
+      - run:
+          command: mkdir plan
