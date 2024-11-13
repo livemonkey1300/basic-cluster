@@ -1,9 +1,32 @@
 version: 2
-jobs:
-  plan:
-    docker:
-      - image: hashicorp/terraform:latest
-    steps:
-      - checkout
-      - run:
-          command: mkdir plan
+workflows:
+  build-and-deploy:
+    jobs:
+      - build
+      - test
+      - lint:
+          filters:
+            branches:
+              ignore:
+                - staging
+                - main
+      # `build` and `test` are run in parallel. See
+      # https://circleci.com/blog/introducing-workflows-on-circleci-2-0/
+      - deploy:
+          name: deploy_staging
+          requires: 
+            - build
+            - test
+          filters:
+            branches:
+              only: staging
+          deploy_env: staging
+      - deploy:
+          name: deploy_production
+          requires:
+            - build
+            - test
+          filters:
+            branches:
+              only: main
+          deploy_env: production
