@@ -81,45 +81,20 @@
       apt:
         update_cache: yes
 
-    - name: Install Terraform
+    - name: Install Helm
       apt:
         name: helm
         state: latest
 
-    # - name: Install Helm
-    #   command: curl https://baltocdn.com/helm/signing.asc | apt-key add -
-    #   command: apt-get install apt-transport-https --yes
-    #   command: echo "deb https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
-    #   command: apt-get update
-    #   command: apt-get install helm
+    - name: Install doctl
+      community.general.snap:
+        name: doctl
 
+    - name: Connect doctl to kube-config
+      command: snap connect doctl:kube-config
 
+    - name: Connect doctl to SSH keys
+      command: snap connect doctl:ssh-keys :ssh-keys
 
-
-
-
-# ---
-# - name: Add HashiCorp repository to sources list
-#   hosts: all
-#   become: yes
-
-#   tasks:
-#     - name: Add HashiCorp repository
-#       apt_repository:
-#         repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-#         state: present
-
-# ---
-# - name: Get the distribution codename in Ansible
-#   hosts: all
-#   become: yes
-
-#   tasks:
-#     - name: Get the distribution codename
-#       command: lsb_release -cs
-#       register: distro_codename
-
-#     - name: Add HashiCorp repository to sources list
-#       apt_repository:
-#         repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ distro_codename.stdout }} main"
-#         state: present
+    - name: Connect doctl to Docker
+      command: snap connect doctl:dot-docker
