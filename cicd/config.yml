@@ -1,14 +1,41 @@
 version: 2.1
 
+name: Terraform CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
 jobs:
-  build:
-    docker:
-      - image: cimg/base:2023.06
+  terraform:
+    runs-on: ubuntu-latest
     steps:
-      - checkout
-      - run:
-          name: Run migrations
-          command: sql/docker-entrypoint.sh sql
-          # Environment variable for a single command shell
-          environment:
-            DATABASE_URL: postgres://conductor:@localhost:5432/conductor_test
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Configure Terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=my-terraform-state" \
+            -backend-config="region=us-west-2" \
+            -backend-config="dynamodb_table=my-terraform-state-lock"
+      - name: Validate Terraform
+        run: terraform validate
+      - name: Apply Terraform
+        run: terraform apply -auto-approve
+
+# jobs:
+#   build:
+#     docker:
+#       - image: cimg/base:2023.06
+#     steps:
+#       - checkout
+#       - run:
+#           name: Run migrations
+#           command: sql/docker-entrypoint.sh sql
+#           # Environment variable for a single command shell
+#           environment:
+#             DATABASE_URL: postgres://conductor:@localhost:5432/conductor_test
