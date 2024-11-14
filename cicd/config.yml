@@ -1,32 +1,26 @@
-version: 2
-workflows:
-  build-and-deploy:
-    jobs:
-      - build
-      - test
-      - lint:
-          filters:
-            branches:
-              ignore:
-                - staging
-                - main
-      # `build` and `test` are run in parallel. See
-      # https://circleci.com/blog/introducing-workflows-on-circleci-2-0/
-      - deploy:
-          name: deploy_staging
-          requires: 
-            - build
-            - test
-          filters:
-            branches:
-              only: staging
-          deploy_env: staging
-      - deploy:
-          name: deploy_production
-          requires:
-            - build
-            - test
-          filters:
-            branches:
-              only: main
-          deploy_env: production
+name: Terraform CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Configure Terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=my-terraform-state" \
+            -backend-config="region=us-west-2" \
+            -backend-config="dynamodb_table=my-terraform-state-lock"
+      - name: Validate Terraform
+        run: terraform validate
+      - name: Apply Terraform
+        run: terraform apply -auto-approve
