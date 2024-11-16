@@ -3,48 +3,118 @@ version: 2.1
 name: Terraform CI/CD
 
 jobs:
-  terraform_plan:
+  plan-apply:
+    working_directory: /tmp/project
     docker:
-      - image: hashicorp/terraform:light
+      - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
     parameters:
       dir:
         type: string
     steps:
       - checkout
       - run:
-          name: Append Bash 
-          command: apk update && apk add curl curl-dev bash
-      - run:
-          name: Change wapper permission
-          command: chmod +x ./terraform_wrapper.sh
-      - run:
-          name: Initialize Terraform
-          command: /bin/bash terraform_wrapper.sh -a init -d << parameters.dir >> 
-      - run:
-          name: Terraform Apply
-          command: /bin/bash terraform_wrapper.sh -a plan -d << parameters.dir  >>
+          name: terraform init & plan
+          command: |
+            terraform init -chdir=terraform/<<parameters.dir>>  -input=false
+            terraform plan -chdir=terraform/<<parameters.dir>> -out tfapply -var-file terraform.tfvars
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
 
-
-  terraform_apply:
+  apply:
     docker:
-      - image: hashicorp/terraform:light
+      - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
     parameters:
       dir:
         type: string
     steps:
-      - checkout
+      - attach_workspace:
+          at: .
       - run:
-          name: Append Bash 
-          command: apk update && apk add curl curl-dev bash
+          name: terraform
+          command: |
+            terraform apply -chdir=terraform/<<parameters.dir>> -auto-approve tfapply
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+
+  plan-destroy:
+    docker:
+      - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
+    parameters:
+      dir:
+        type: string
+    steps:
+      - attach_workspace:
+          at: .
       - run:
-          name: Change wapper permission
-          command: chmod +x terraform_wrapper.sh
+          name: terraform create destroy plan
+          command: |
+            terraform plan -chdir=terraform/<<parameters.dir>> -destroy -out tfdestroy -var-file terraform.tfvars
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+
+  destroy:
+    docker:
+      - image: docker.mirror.hashicorp.services/hashicorp/terraform:light
+    parameters:
+      dir:
+        type: string
+    steps:
+      - attach_workspace:
+          at: .
       - run:
-          name: Initialize Terraform
-          command: ./terraform_wrapper.sh -a init -d << parameters.dir >>
-      - run:
-          name: Terraform Apply
-          command: ./terraform_wrapper.sh -a apply -d << parameters.dir >>
+          name: terraform destroy
+          command: |
+            terraform apply -chdir=terraform/<<parameters.dir>> -auto-approve tfdestroy
+
+
+  # terraform_plan:
+  #   docker:
+  #     - image: hashicorp/terraform:light
+  #   parameters:
+  #     dir:
+  #       type: string
+  #   steps:
+  #     - checkout
+  #     - run:
+  #         name: Append Bash 
+  #         command: apk update && apk add curl curl-dev bash
+  #     - run:
+  #         name: Change wapper permission
+  #         command: chmod +x ./terraform_wrapper.sh
+  #     - run:
+  #         name: Initialize Terraform
+  #         command: /bin/bash terraform_wrapper.sh -a init -d << parameters.dir >> 
+  #     - run:
+  #         name: Terraform Apply
+  #         command: /bin/bash terraform_wrapper.sh -a plan -d << parameters.dir  >>
+
+
+  # terraform_apply:
+  #   docker:
+  #     - image: hashicorp/terraform:light
+  #   parameters:
+  #     dir:
+  #       type: string
+  #   steps:
+  #     - checkout
+  #     - run:
+  #         name: Append Bash 
+  #         command: apk update && apk add curl curl-dev bash
+  #     - run:
+  #         name: Change wapper permission
+  #         command: chmod +x terraform_wrapper.sh
+  #     - run:
+  #         name: Initialize Terraform
+  #         command: ./terraform_wrapper.sh -a init -d << parameters.dir >>
+  #     - run:
+  #         name: Terraform Apply
+  #         command: ./terraform_wrapper.sh -a apply -d << parameters.dir >>
 
   # terraform_ubuntu:
   #   runs-on: ubuntu-latest
@@ -65,23 +135,29 @@ jobs:
 
 workflows:
   version: 2
-  build_and_deploy:
+  plan_approve_apply:
     jobs:
-      - terraform_plan:
+      - plan-apply:
           dir: cluster
-      - terraform_apply:
+      - hold-apply:
+          dir: cluster
+          type: approval
+          requires:
+            - plan-apply
+      - apply:
           dir: cluster
           requires:
-            - terraform_plan
-# jobs:
-#   build:
-#     docker:
-#       - image: cimg/base:2023.06
-#     steps:
-#       - checkout
-#       - run:
-#           name: Run migrations
-#           command: sql/docker-entrypoint.sh sql
-#           # Environment variable for a single command shell
-#           environment:
-#             DATABASE_URL: postgres://conductor:@localhost:5432/conductor_test
+            - hold-apply
+      - plan-destroy:
+          dir: cluster
+          requires:
+            - apply
+      - hold-destroy:
+          dir: cluster
+          type: approval
+          requires:
+            - plan-destroy
+      - destroy:
+          dir: cluster
+          requires:
+            - hold-destroy
