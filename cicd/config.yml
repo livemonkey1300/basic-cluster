@@ -13,13 +13,13 @@ jobs:
       - checkout
       - run:
           name: Change wapper permission
-          command: chmod +x terraform_wrapper.sh
+          command: chmod +x ./terraform_wrapper.sh
       - run:
           name: Initialize Terraform
-          command: ./terraform_wrapper.sh -a init -d << parameters.dir >> 
+          command: /bin/bash terraform_wrapper.sh -a init -d << parameters.dir >> 
       - run:
           name: Terraform Apply
-          command: ./terraform_wrapper.sh -a plan -d << parameters.dir  >>
+          command: /bin/bash terraform_wrapper.sh -a plan -d << parameters.dir  >>
 
 
   terraform_apply:
