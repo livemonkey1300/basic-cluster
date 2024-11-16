@@ -9,23 +9,50 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Initialize Terraform
-          command: terraform init
+          name: Change wapper permission
+          command: chmod +x terraform_wrapper.sh
       - run:
-          name: Terraform Plan
-          command: terraform plan
+          name: Initialize Terraform
+          command: ./terraform_wrapper.sh -a init -d parameters.dir
+      - run:
+          name: Terraform Apply
+          command: ./terraform_wrapper.sh -a plan -d parameters.dir 
+
 
   terraform_apply:
     docker:
       - image: hashicorp/terraform:light
+    parameters:
+      dir:
+        type: string
     steps:
       - checkout
       - run:
+          name: Change wapper permission
+          command: chmod +x terraform_wrapper.sh
+      - run:
           name: Initialize Terraform
-          command: terraform init
+          command: ./terraform_wrapper.sh -a init -d parameters.dir
       - run:
           name: Terraform Apply
-          command: terraform apply -auto-approve
+          command: ./terraform_wrapper.sh -a apply -d parameters.dir 
+
+  terraform_ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Configure Terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=my-terraform-state" \
+            -backend-config="region=us-west-2" \
+            -backend-config="dynamodb_table=my-terraform-state-lock"
+      - name: Validate Terraform
+        run: terraform validate
+      - name: Apply Terraform
+        run: terraform apply -auto-approve
+
 
 workflows:
   version: 2
