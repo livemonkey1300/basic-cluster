@@ -15,7 +15,7 @@ jobs:
       - run:
           name: terraform init & plan
           command: |
-            terraform init -chdir=terraform/<<parameters.dir>>  -input=false
+            terraform init -chdir=terraform/<<parameters.dir>> 
             terraform plan -chdir=terraform/<<parameters.dir>> -out tfapply -var-file terraform.tfvars
       - persist_to_workspace:
           root: .
