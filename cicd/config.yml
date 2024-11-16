@@ -12,6 +12,9 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Append Bash 
+          command: apk update && apk add curl curl-dev bash
+      - run:
           name: Change wapper permission
           command: chmod +x ./terraform_wrapper.sh
       - run:
@@ -30,6 +33,9 @@ jobs:
         type: string
     steps:
       - checkout
+      - run:
+          name: Append Bash 
+          command: apk update && apk add curl curl-dev bash
       - run:
           name: Change wapper permission
           command: chmod +x terraform_wrapper.sh
