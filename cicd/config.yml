@@ -15,8 +15,8 @@ jobs:
       - run:
           name: terraform init & plan
           command: |
-            terraform init -chdir=terraform/<<parameters.dir>> 
-            terraform plan -chdir=terraform/<<parameters.dir>> -out tfapply -var-file terraform.tfvars
+            terraform -chdir=terraform/<<parameters.dir>>  init 
+            terraform -chdir=terraform/<<parameters.dir>>  plan -out tfapply -var-file terraform.tfvars
       - persist_to_workspace:
           root: .
           paths:
@@ -34,7 +34,7 @@ jobs:
       - run:
           name: terraform
           command: |
-            terraform apply -chdir=terraform/<<parameters.dir>> -auto-approve tfapply
+            terraform -chdir=terraform/<<parameters.dir>>  apply -auto-approve tfapply
       - persist_to_workspace:
           root: .
           paths:
@@ -52,7 +52,7 @@ jobs:
       - run:
           name: terraform create destroy plan
           command: |
-            terraform plan -chdir=terraform/<<parameters.dir>> -destroy -out tfdestroy -var-file terraform.tfvars
+            terraform -chdir=terraform/<<parameters.dir>>  plan -destroy -out tfdestroy -var-file terraform.tfvars
       - persist_to_workspace:
           root: .
           paths:
@@ -70,7 +70,7 @@ jobs:
       - run:
           name: terraform destroy
           command: |
-            terraform apply -chdir=terraform/<<parameters.dir>> -auto-approve tfdestroy
+            terraform -chdir=terraform/<<parameters.dir>> apply -auto-approve tfdestroy
 
 
   # terraform_plan:
