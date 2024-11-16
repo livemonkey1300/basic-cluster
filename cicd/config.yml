@@ -6,6 +6,9 @@ jobs:
   terraform_plan:
     docker:
       - image: hashicorp/terraform:light
+    parameters:
+      dir:
+        type: string
     steps:
       - checkout
       - run:
@@ -13,10 +16,10 @@ jobs:
           command: chmod +x terraform_wrapper.sh
       - run:
           name: Initialize Terraform
-          command: ./terraform_wrapper.sh -a init -d parameters.dir
+          command: ./terraform_wrapper.sh -a init -d << parameters.dir >> 
       - run:
           name: Terraform Apply
-          command: ./terraform_wrapper.sh -a plan -d parameters.dir 
+          command: ./terraform_wrapper.sh -a plan -d << parameters.dir  >>
 
 
   terraform_apply:
@@ -32,34 +35,36 @@ jobs:
           command: chmod +x terraform_wrapper.sh
       - run:
           name: Initialize Terraform
-          command: ./terraform_wrapper.sh -a init -d parameters.dir
+          command: ./terraform_wrapper.sh -a init -d << parameters.dir >>
       - run:
           name: Terraform Apply
-          command: ./terraform_wrapper.sh -a apply -d parameters.dir 
+          command: ./terraform_wrapper.sh -a apply -d << parameters.dir >>
 
-  terraform_ubuntu:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Configure Terraform
-        run: |
-          terraform init \
-            -backend-config="bucket=my-terraform-state" \
-            -backend-config="region=us-west-2" \
-            -backend-config="dynamodb_table=my-terraform-state-lock"
-      - name: Validate Terraform
-        run: terraform validate
-      - name: Apply Terraform
-        run: terraform apply -auto-approve
+  # terraform_ubuntu:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+  #     - name: Configure Terraform
+  #       run: |
+  #         terraform init \
+  #           -backend-config="bucket=my-terraform-state" \
+  #           -backend-config="region=us-west-2" \
+  #           -backend-config="dynamodb_table=my-terraform-state-lock"
+  #     - name: Validate Terraform
+  #       run: terraform validate
+  #     - name: Apply Terraform
+  #       run: terraform apply -auto-approve
 
 
 workflows:
   version: 2
   build_and_deploy:
     jobs:
-      - terraform_plan
+      - terraform_plan:
+          dir: cluster
       - terraform_apply:
+          dir: cluster
           requires:
             - terraform_plan
 # jobs:
