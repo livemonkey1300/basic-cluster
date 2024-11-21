@@ -2,7 +2,7 @@
 # Update package list and install python3-pip
 usermod -aG sudo $USER
 
-apt update && apt install -y python3-pip python3 python3.12-venv
+apt update && apt install -y python3-pip python3 python3.12-venv ansible-core
 
 # Install the new environement 
 python3 -m venv ~/.venv
