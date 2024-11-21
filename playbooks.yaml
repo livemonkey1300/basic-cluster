@@ -32,7 +32,7 @@
         state: present
 
     - name: Get the distribution codename
-      command: lsb_release -cs
+      command: lsb_release -cs 2>/dev/null
       register: distro_codename
 
 
